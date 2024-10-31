@@ -20,9 +20,9 @@ const mk3 = new MnemonicKey({
 
 const main = async () => {
     // mk1, mk2 가 각각 서로에게 25 axpla를 전달하고, mk3 이 gas fee 대납하는 상황
-    const from1 = lcd.wallet(mk1).key.accAddress;
-    const from2 = lcd.wallet(mk2).key.accAddress;
-    const from3 = lcd.wallet(mk3).key.accAddress;
+    const from1 = lcd.wallet(mk1).key.accAddress; // xpla1vdch40yjqeqfptnq5nkgd29933yk3weyc08rku
+    const from2 = lcd.wallet(mk2).key.accAddress; // xpla1xszf68cz7aul4tfnypgz56m45crv7dyz2vph5r
+    const from3 = lcd.wallet(mk3).key.accAddress; // xpla15l4s4kj3972vunayq8y3esf40r0ev9auywegvv
 
     const balance1 = await lcd.bank.balance(from1); 
     const balance2 = await lcd.bank.balance(from1); 
@@ -63,14 +63,28 @@ const main = async () => {
     }
 
     const signedTx1 = await lcd.wallet(mk1).key.signTx(tx, userSignOption1) // Signing
-    const encodedSignedTx1 = encodeTx(signedTx1);
-    console.log('encodedSignedTx1', encodedSignedTx1); // 서버 클라 통신은 이렇게 encoding해서 사용
-    const originSignedTx1 = decodeTx(encodedSignedTx1);
-    
-    const signedTx2 = await lcd.wallet(mk2).key.signTx(originSignedTx1, userSignOption2) // Signing
-    const signedTx3 = await lcd.wallet(mk3).key.signTx(signedTx2, userSignOption3) // Signing
-    const txResult = await lcd.tx.broadcastSync(signedTx3);
+    // const encodedSignedTx1 = encodeTx(signedTx1);
+    // console.log('encodedSignedTx1', encodedSignedTx1); // 서버 클라 통신은 이렇게 encoding해서 사용
+    // const originSignedTx1 = decodeTx(encodedSignedTx1);
+    const signedTx2 = await lcd.wallet(mk2).key.signTx(tx, userSignOption2) // Signing
+    const signedTx3 = await lcd.wallet(mk3).key.signTx(tx, userSignOption3) // Signing
+
+    // signedTx3에 signer_infos와 signatures를 추가하는걸로 하자.
+    signedTx1.signatures.push(signedTx2.signatures[0], signedTx3.signatures[0]);
+    signedTx1.auth_info.signer_infos.push(signedTx2.auth_info.signer_infos[0], signedTx3.auth_info.signer_infos[0]);
+    const txResult = await lcd.tx.broadcastSync(signedTx1);
     console.log(txResult);
+
+    // signedTx3.signatures.push(signedTx1.signatures[0], signedTx2.signatures[0]);
+    // signedTx3.auth_info.signer_infos.push(signedTx1.auth_info.signer_infos[0], signedTx2.auth_info.signer_infos[0]);
+    // const txResult = await lcd.tx.broadcastSync(signedTx3);
+    // {
+    //     height: 0,
+    //     txhash: 'FC24543DE9D73DB54608466E7E03FB8F8FF56233A260FAF8A5AA8AD452EA6D44',
+    //     raw_log: 'pubKey does not match signer address xpla1vdch40yjqeqfptnq5nkgd29933yk3weyc08rku with signer index: 0: invalid pubkey',
+    //     code: 8,
+    //     codespace: 'sdk'
+    //   }
 
     setTimeout(async () => {
         const afterbalance1 = await lcd.bank.balance(from1); // Balance details
